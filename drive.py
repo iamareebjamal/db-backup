@@ -1,3 +1,4 @@
+import datetime
 import os
 
 from pydrive.auth import GoogleAuth
@@ -9,7 +10,8 @@ class DriveHelper:
     folder_mime_type = 'application/vnd.google-apps.folder'
     backup_folder = None
 
-    def __init__(self):
+    def __init__(self, expiry_time=datetime.timedelta(days=180)):
+        self.expiry_time = expiry_time
         print('Authenticating Google Drive...')
         gauth = GoogleAuth()
         gauth.LocalWebserverAuth()
@@ -73,3 +75,25 @@ class DriveHelper:
         file.Upload()
         print('Uploaded')
         return file
+
+    def get_stale_backups(self):
+        expiry_time_start = (datetime.datetime.utcnow() - self.expiry_time).isoformat()
+        query = f"title contains '.db' and " \
+                f"'{self.backup_folder['id']}' in parents and " \
+                f"modifiedDate < '{expiry_time_start}' and " \
+                f"mimeType!='{self.folder_mime_type}' and trashed=false"
+        print(query)
+        return self.drive.ListFile({
+            'q': query
+        }).GetList()
+
+    def purge_stale_backups(self):
+        stale_backups = self.get_stale_backups()
+        if len(stale_backups) == 0:
+            return
+        print(f"Deleting {len(stale_backups)} stale backups...")
+        for backup in stale_backups:
+            file = self.drive.CreateFile({'id': backup['id']})
+            file.Delete()
+
+        print('Purging Complete')

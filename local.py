@@ -6,7 +6,7 @@ import os
 class FileHelper:
     last_index_time = None
 
-    def __init__(self, expiry_time=datetime.timedelta(days=180)):
+    def __init__(self, expiry_time=datetime.timedelta(days=30)):
         self.expiry_time = expiry_time
         print('Checking if backup directory exists...')
         self.current_dir = os.path.dirname(os.path.realpath(__file__))
