@@ -181,3 +181,4 @@ venv.bak/
 
 client_secrets.json
 credentials.json
+db_backup/
