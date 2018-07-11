@@ -1,0 +1,4 @@
+client_config_file: credentials.json
+save_credentials: true
+save_credentials_backend: file
+save_credentials_file: client_secrets.json
