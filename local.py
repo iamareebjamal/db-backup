@@ -6,7 +6,8 @@ import os
 class FileHelper:
     last_index_time = None
 
-    def __init__(self):
+    def __init__(self, expiry_time=datetime.timedelta(days=180)):
+        self.expiry_time = expiry_time
         print('Checking if backup directory exists...')
         self.current_dir = os.path.dirname(os.path.realpath(__file__))
 
@@ -21,6 +22,12 @@ class FileHelper:
             self.save_last_index_time(datetime.datetime.utcfromtimestamp(0))
         else:
             self.last_index_time = self.get_last_index_time()
+
+        stale_backups = self.get_stale_backups()
+        if len(stale_backups) > 0:
+            for backup in stale_backups:
+                os.remove(backup['file'])
+            print(f"Deleted {len(stale_backups)} Stale Backups...")
 
     def get_last_index_time(self):
         if self.last_index_time:
@@ -42,14 +49,17 @@ class FileHelper:
                 map(lambda name: {'file': name, 'time': datetime.datetime.fromtimestamp(os.path.getmtime(name))},
                     filter(lambda file: os.path.getsize(file) > 0,
                            map(lambda name: os.path.join(self.backup_folder, name),
-                               filter(lambda name: name.endswith('.txt'),
+                               filter(lambda name: name.endswith('.db'),
                                os.listdir(self.backup_folder)))))),
             key=lambda item: item['time'])
 
     def get_new_backups(self):
         return list(filter(lambda item: item['time'] > self.last_index_time, self.get_backups()))
 
+    def get_stale_backups(self):
+        return list(filter(lambda backup: datetime.datetime.now() - backup['time'] > self.expiry_time,
+                           self.get_backups()))
+
 
 if __name__ == "__main__":
-    fh = FileHelper()
-    print(fh.get_new_backups())
+    fh = FileHelper(expiry_time=datetime.timedelta(seconds=60))
